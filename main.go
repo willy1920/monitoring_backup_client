@@ -91,7 +91,9 @@ func (self *Config) CheckName(name string) {
 					self.Created(val, time.Now().Format(layoutSend), "Exporting Dump File")
 				}
 			case ".rar":
-				log.Println("rar")
+				if filedatestring == time.Now().Format(layout) {
+					self.Created(val, time.Now().Format(layoutSend), "Success")
+				}
 			}
 			break;
 		}
