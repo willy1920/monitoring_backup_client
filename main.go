@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"database/sql"
 
 	"github.com/willy1920/monitoring_backup_proto_go"
 	"github.com/fsnotify/fsnotify"
-
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -20,11 +20,13 @@ type Config struct{
 	Kebun []string `json:"kebun"`
 	Path string `json:"path"`
 	Server string `json:"server"`
+	db *sql.DB
 }
 
 func main() {
 	config := Config{}
 	config.readConfig()
+	config.Init()
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -100,19 +102,52 @@ func (self *Config) CheckName(name string) {
 	}
 }
 
-func (self *Config) Created(kebun string, timestamp string, status string) {
+func (self *Config) Created(kebun string, timestamp string, status string) error {
+	log.Println("Dialing server...")
 	var conn *grpc.ClientConn
 	conn, err := grpc.Dial(self.Server, grpc.WithInsecure())
 	if err != nil{
+		self.SaveLog(&kebun, &timestamp, &status)
+		ScheduleCheckServer()
 		log.Fatalf("Did not connect: %s", err)
+		return err
 	}
 	defer conn.Close()
 
+	log.Println("Making gRPC request...")
 	c := monitoring_backup.NewMonitoringBackupClient(conn)
 	
+	log.Println("Send request")
 	response, err := c.SendNotif(context.Background(), &monitoring_backup.CreatedNotify{Kebun: kebun, Timestamp: timestamp, Status: status})
 	if err != nil {
-		log.Fatalf("Error when calling SendNotif: %s", err)
+		self.SaveLog(&kebun, &timestamp, &status)
+		ScheduleCheckServer()
+		log.Println("Error when calling SendNotif: %s", err)
+		return err
+	} else{
+		log.Printf("Response from server: %s", response.Kebun)
 	}
-	log.Printf("Response from server: %s", response.Kebun)
+	return nil
+}
+
+func ScheduleCheckServer() {
+	ticker := time.NewTicker(2 * time.Second)
+	quit := make(chan struct{})
+	go func(){
+		for{
+			select {
+			case <- ticker.C:
+				log.Println("a")
+			case <- quit:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+}
+
+func checkErr(err error)  {
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
 }
