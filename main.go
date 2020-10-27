@@ -21,12 +21,16 @@ type Config struct{
 	Path string `json:"path"`
 	Server string `json:"server"`
 	db *sql.DB
+	Schedule chan bool
+	ScheduleRunning bool
 }
 
 func main() {
 	config := Config{}
 	config.readConfig()
 	config.Init()
+	config.Schedule = make(chan bool)
+	config.ScheduleRunning = false
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -92,7 +96,12 @@ func (self *Config) CheckName(name string) {
 				if filedatestring == time.Now().Format(layout) {
 					ok := self.Created(val, time.Now().Format(layoutSend), "Exporting Dump File")
 					if ok != nil {
-						self.ScheduleCheckServer()
+						if self.ScheduleRunning {
+							self.Schedule <- true
+							self.ScheduleCheckServer()
+						} else{
+							self.ScheduleCheckServer()
+						}
 					}
 				}
 			case ".rar":
@@ -131,31 +140,45 @@ func (self *Config) Created(kebun string, timestamp string, status string) error
 	return nil
 }
 
-func (self *Config) ScheduleCheckServer() {
-	var backupLogs = self.GetLogs()
-	log.Println(backupLogs)
+func (self *Config) ScheduleCheckServer() chan bool {
+	self.Schedule = make(chan bool)
+	self.ScheduleRunning = true
 
-	ticker := time.NewTicker(30 * time.Second)
-	quit := make(chan struct{})
+	ticker := time.NewTicker(2 * time.Second)
+	stop := make(chan bool)
 	go func(){
 		for{
 			select {
 			case <- ticker.C:
 				log.Println("a")
-				for _, v := range backupLogs{
-					ok := self.Created(v.Kebun, v.Timestamp, v.Status)
-					if ok != nil {
-						break;
-					} else {
-						self.DeleteLog(&v.Kebun, &v.Timestamp)
-					}
-				}
-			case <- quit:
+				self.ScheduleDeleteLogs()
+			case <- self.Schedule:
+				log.Println("STOP")
 				ticker.Stop()
 				return
 			}
 		}
 	}()
+	return stop
+}
+
+func (self *Config) ScheduleDeleteLogs() {
+	var backupLogs = self.GetLogs()
+	status := true
+
+	for _, v := range backupLogs{
+		ok := self.Created(v.Kebun, v.Timestamp, v.Status)
+		if ok != nil {
+			status = false
+			break;
+		} else {
+			self.DeleteLog(&v.Kebun, &v.Timestamp)
+		}
+	}
+	if status {
+		self.ScheduleRunning = false
+		self.Schedule <- true
+	}
 }
 
 func checkErr(err error)  {
