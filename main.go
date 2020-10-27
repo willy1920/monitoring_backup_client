@@ -90,7 +90,10 @@ func (self *Config) CheckName(name string) {
 			switch ext {
 			case ".dmp":
 				if filedatestring == time.Now().Format(layout) {
-					self.Created(val, time.Now().Format(layoutSend), "Exporting Dump File")
+					ok := self.Created(val, time.Now().Format(layoutSend), "Exporting Dump File")
+					if ok != nil {
+						self.ScheduleCheckServer()
+					}
 				}
 			case ".rar":
 				if filedatestring == time.Now().Format(layout) {
@@ -108,8 +111,7 @@ func (self *Config) Created(kebun string, timestamp string, status string) error
 	conn, err := grpc.Dial(self.Server, grpc.WithInsecure())
 	if err != nil{
 		self.SaveLog(&kebun, &timestamp, &status)
-		ScheduleCheckServer()
-		log.Fatalf("Did not connect: %s", err)
+		log.Println("Did not connect: %s", err)
 		return err
 	}
 	defer conn.Close()
@@ -121,7 +123,6 @@ func (self *Config) Created(kebun string, timestamp string, status string) error
 	response, err := c.SendNotif(context.Background(), &monitoring_backup.CreatedNotify{Kebun: kebun, Timestamp: timestamp, Status: status})
 	if err != nil {
 		self.SaveLog(&kebun, &timestamp, &status)
-		ScheduleCheckServer()
 		log.Println("Error when calling SendNotif: %s", err)
 		return err
 	} else{
@@ -130,7 +131,10 @@ func (self *Config) Created(kebun string, timestamp string, status string) error
 	return nil
 }
 
-func ScheduleCheckServer() {
+func (self *Config) ScheduleCheckServer() {
+	var backupLogs = self.GetLogs()
+	log.Println(backupLogs)
+
 	ticker := time.NewTicker(2 * time.Second)
 	quit := make(chan struct{})
 	go func(){
@@ -138,6 +142,12 @@ func ScheduleCheckServer() {
 			select {
 			case <- ticker.C:
 				log.Println("a")
+				for _, v := range backupLogs{
+					ok := self.Created(v.Kebun, v.Timestamp, v.Status)
+					if ok != nil {
+						break;
+					}
+				}
 			case <- quit:
 				ticker.Stop()
 				return
