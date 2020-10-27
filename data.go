@@ -33,6 +33,12 @@ func (self *Config) GetLogs() []BackupLog {
 	return backupLogs
 }
 
+func (self *Config) DeleteLog(kebun *string, timestamp *string) {
+	stmt,err := self.db.Prepare("DELETE FROM logs WHERE kebun=? AND last_update=?")
+	checkErr(err)
+	_, err = stmt.Exec(&kebun, &timestamp)
+}
+
 func (self *Config) Init() {
 	sqlstmt := `CREATE TABLE IF NOT EXISTS 'logs'(
 		'kebun' CHAR(6),

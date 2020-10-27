@@ -135,7 +135,7 @@ func (self *Config) ScheduleCheckServer() {
 	var backupLogs = self.GetLogs()
 	log.Println(backupLogs)
 
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	quit := make(chan struct{})
 	go func(){
 		for{
@@ -146,6 +146,8 @@ func (self *Config) ScheduleCheckServer() {
 					ok := self.Created(v.Kebun, v.Timestamp, v.Status)
 					if ok != nil {
 						break;
+					} else {
+						self.DeleteLog(&v.Kebun, &v.Timestamp)
 					}
 				}
 			case <- quit:
