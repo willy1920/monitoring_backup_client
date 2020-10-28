@@ -22,11 +22,13 @@ type Config struct{
 	Server string `json:"server"`
 	WaitReconnect int `json:"waitReconnect"`
 	db *sql.DB
+	WatcherChan chan bool
 	Schedule chan bool
 	ScheduleRunning bool
 }
 
 func (self *Config) InitSchedule() {
+	log.Println("Start watcher")
 	self.readConfig()
 	self.Init()
 	self.Schedule = make(chan bool)
@@ -38,7 +40,7 @@ func (self *Config) InitSchedule() {
 	}
 	defer watcher.Close()
 
-	done := make(chan bool)
+	self.WatcherChan = make(chan bool)
 	go func(){
 		for{
 			select{
@@ -51,15 +53,14 @@ func (self *Config) InitSchedule() {
 				case fsnotify.Create:
 					self.CheckName(strings.ToLower(filepath.Base(event.Name)))
 				}
-				// log.Println("Event: ", event)
-				// if event.Op&fsnotify.Write == fsnotify.Write {
-				// 	log.Println("Modified file: ", event.Name)
-				// }
 			case err, ok := <-watcher.Errors:
 				if !ok{
 					return
 				}
 				log.Println("Error: ", err)
+			case <- self.WatcherChan:
+				log.Println("Stop watcher")
+				return
 			}
 		}
 	}()
@@ -68,7 +69,7 @@ func (self *Config) InitSchedule() {
 	if err != nil{
 		log.Fatal(err)
 	}
-	<-done
+	<-self.WatcherChan
 }
 
 func (self *Config) readConfig() {
@@ -150,10 +151,10 @@ func (self *Config) ScheduleCheckServer() chan bool {
 		for{
 			select {
 			case <- ticker.C:
-				log.Println("a")
+				log.Println("Start check server")
 				self.ScheduleDeleteLogs()
 			case <- self.Schedule:
-				log.Println("STOP")
+				log.Println("Stop check server")
 				ticker.Stop()
 				return
 			}
