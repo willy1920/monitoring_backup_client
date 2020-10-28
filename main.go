@@ -2,45 +2,62 @@ package main
 
 import (
 	"log"
-	"github.com/kardianos/service"
+	"sync"
+
+	"github.com/judwhite/go-svc/svc"
 )
 
-var logger service.Logger
-
-type program struct{}
-
-func (p *program) Start(s service.Service) error {
-	// Start should not block. Do the actual work async.
-	go p.run()
-	return nil
-}
-func (p *program) run() {
-	config := &Config{}
-	config.InitSchedule()
-}
-func (p *program) Stop(s service.Service) error {
-	// Stop should not block. Return with a few seconds.
-	return nil
+// program implements svc.Service
+type program struct {
+	wg   sync.WaitGroup
+	quit chan struct{}
+	config Config
 }
 
 func main() {
-	svcConfig := &service.Config{
-		Name:        "Monitoring Backup",
-		DisplayName: "Monitoring Backup",
-		Description: "Monitoring Backup",
-	}
-
 	prg := &program{}
-	s, err := service.New(prg, svcConfig)
-	checkErr(err)
 
-	logger, err = s.Logger(nil)
-	checkErr(err)
-
-	err = s.Run()
-	if err != nil {
-		logger.Error(err)
+	// Call svc.Run to start your program/service.
+	if err := svc.Run(prg); err != nil {
+		log.Fatal(err)
 	}
+}
+
+func (p *program) Init(env svc.Environment) error {
+	log.Printf("is win service? %v\n", env.IsWindowsService())
+	return nil
+}
+
+func (p *program) Start() error {
+	// The Start method must not block, or Windows may assume your service failed
+	// to start. Launch a Goroutine here to do something interesting/blocking.
+
+	p.quit = make(chan struct{})
+
+	p.wg.Add(1)
+	go func() {
+		log.Println("Starting...")
+
+		p.config.InitSchedule()
+
+		<-p.quit
+		log.Println("Quit signal received...")
+		p.wg.Done()
+	}()
+
+	return nil
+}
+
+func (p *program) Stop() error {
+	log.Println("Stopping...")
+	
+	close(p.config.Schedule)
+	close(p.config.WatcherChan)
+
+	close(p.quit)
+	p.wg.Wait()
+	log.Println("Stopped.")
+	return nil
 }
 
 func checkErr(err error)  {
