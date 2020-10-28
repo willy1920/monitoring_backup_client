@@ -1,5 +1,6 @@
 {
   "server": "172.18.128.203:9000",
   "path": "/go",
-  "kebun": ["PSM", "PKC"]
+  "kebun": ["PSM", "PKC"],
+  "waitReconnect": 1
 }

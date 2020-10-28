@@ -20,6 +20,7 @@ type Config struct{
 	Kebun []string `json:"kebun"`
 	Path string `json:"path"`
 	Server string `json:"server"`
+	WaitReconnect int `json:"waitReconnect"`
 	db *sql.DB
 	Schedule chan bool
 	ScheduleRunning bool
@@ -143,7 +144,7 @@ func (self *Config) ScheduleCheckServer() chan bool {
 	self.Schedule = make(chan bool)
 	self.ScheduleRunning = true
 
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(time.Duration(self.WaitReconnect) * time.Second)
 	stop := make(chan bool)
 	go func(){
 		for{
