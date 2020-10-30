@@ -19,13 +19,8 @@ func usage(errmsg string) {
 	os.Exit(2)
 }
 
-// func main(){
-// 	config := &Config{}
-// 	config.readConfig()
-// }
-
 func main(){
-	const svcName = "myservice"
+	const svcName = "Monitoring Backup"
 
 	inService, err := svc.IsWindowsService()
 	if err != nil {
@@ -64,8 +59,6 @@ func main(){
 		log.Fatalf("failed to %s %s: %v", cmd, svcName, err)
 	}
 	return
-	config := &Config{}
-	config.InitSchedule()
 }
 
 func checkErr(err error)  {

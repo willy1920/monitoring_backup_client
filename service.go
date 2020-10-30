@@ -33,7 +33,7 @@ loop:
 		select {
 		case <-tick:
 			// beep()
-			config.InitSchedule()
+			go config.InitSchedule()
 			elog.Info(1, "beep")
 		case c := <-r:
 			switch c.Cmd {
@@ -44,8 +44,7 @@ loop:
 				changes <- c.CurrentStatus
 			case svc.Stop, svc.Shutdown:
 				// golang.org/x/sys/windows/svc.TestExample is verifying this output.
-				config.WatcherChan <- true
-				config.Schedule <- true
+				config.StopAll()
 				
 				testOutput := strings.Join(args, "-")
 				testOutput += fmt.Sprintf("-%d", c.Context)

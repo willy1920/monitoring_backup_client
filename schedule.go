@@ -27,6 +27,11 @@ type Config struct{
 	ScheduleRunning bool
 }
 
+func (self *Config) StopAll() {
+	close(self.WatcherChan)
+	close(self.Schedule)
+}
+
 func (self *Config) InitSchedule() {
 	log.Println("Start watcher")
 	self.readConfig()
@@ -104,7 +109,7 @@ func (self *Config) CheckName(name string) {
 					ok := self.Created(val, time.Now().Format(layoutSend), "Exporting Dump File")
 					if ok != nil {
 						if self.ScheduleRunning {
-							self.Schedule <- true
+							close(self.Schedule)
 							self.ScheduleCheckServer()
 						} else{
 							self.ScheduleCheckServer()
@@ -147,12 +152,11 @@ func (self *Config) Created(kebun string, timestamp string, status string) error
 	return nil
 }
 
-func (self *Config) ScheduleCheckServer() chan bool {
+func (self *Config) ScheduleCheckServer() {
 	self.Schedule = make(chan bool)
 	self.ScheduleRunning = true
 
 	ticker := time.NewTicker(time.Duration(self.WaitReconnect) * time.Second)
-	stop := make(chan bool)
 	go func(){
 		for{
 			select {
@@ -166,7 +170,6 @@ func (self *Config) ScheduleCheckServer() chan bool {
 			}
 		}
 	}()
-	return stop
 }
 
 func (self *Config) ScheduleDeleteLogs() {
