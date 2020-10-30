@@ -2,3 +2,4 @@ pkg/
 src/
 *.dmp
 *.sqlite3
+*.exe

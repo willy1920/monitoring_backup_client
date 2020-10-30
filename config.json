@@ -1,6 +1,6 @@
 {
   "server": "172.18.128.203:9000",
-  "path": "/go",
+  "path": "D:\\Backup",
   "kebun": ["PSM", "PKC"],
-  "waitReconnect": 1
+  "waitReconnect": 30
 }
