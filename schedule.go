@@ -73,7 +73,13 @@ func (self *Config) InitSchedule() {
 }
 
 func (self *Config) readConfig() {
-	jsonFile, err := os.Open("config.json")
+	ex, err := os.Executable()
+  if err != nil {
+    panic(err)
+  }
+	exPath := filepath.Dir(ex)
+
+	jsonFile, err := os.Open(exPath + "\\config.json")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -121,7 +127,7 @@ func (self *Config) Created(kebun string, timestamp string, status string) error
 	conn, err := grpc.Dial(self.Server, grpc.WithInsecure())
 	if err != nil{
 		self.SaveLog(&kebun, &timestamp, &status)
-		log.Println("Did not connect: %s", err)
+		log.Printf("Did not connect: %s\r\n", err)
 		return err
 	}
 	defer conn.Close()
@@ -133,10 +139,10 @@ func (self *Config) Created(kebun string, timestamp string, status string) error
 	response, err := c.SendNotif(context.Background(), &monitoring_backup.CreatedNotify{Kebun: kebun, Timestamp: timestamp, Status: status})
 	if err != nil {
 		self.SaveLog(&kebun, &timestamp, &status)
-		log.Println("Error when calling SendNotif: %s", err)
+		log.Printf("Error when calling SendNotif: %s\r\n", err)
 		return err
 	} else{
-		log.Printf("Response from server: %s", response.Kebun)
+		log.Printf("Response from server: %s\r\n", response.Kebun)
 	}
 	return nil
 }
