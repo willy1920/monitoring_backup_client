@@ -1,64 +1,52 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"os"
-	"strings"
 
-	"golang.org/x/sys/windows/svc"
+	"github.com/kardianos/service"
 )
 
-func usage(errmsg string) {
-	fmt.Fprintf(os.Stderr,
-		"%s\n\n"+
-			"usage: %s <command>\n"+
-			"       where <command> is one of\n"+
-			"       install, remove, debug, start, stop, pause or continue.\n",
-		errmsg, os.Args[0])
-	os.Exit(2)
+var logger service.Logger
+
+type program struct{}
+
+func (p *program) Start(s service.Service) error {
+	// Start should not block. Do the actual work async.
+	go p.run()
+	return nil
+}
+func (p *program) run() {
+	// Do work here
+	config := &Config{}
+	config.InitSchedule()
+}
+func (p *program) Stop(s service.Service) error {
+	// Stop should not block. Return with a few seconds.
+	config := &Config{}
+	config.StopAll()
+	return nil
 }
 
-func main(){
-	const svcName = "Monitoring Backup"
+func main() {
+	svcConfig := &service.Config{
+		Name:        "GoServiceExampleSimple",
+		DisplayName: "Go Service Example",
+		Description: "This is an example Go service.",
+	}
 
-	inService, err := svc.IsWindowsService()
+	prg := &program{}
+	s, err := service.New(prg, svcConfig)
 	if err != nil {
-		log.Fatalf("failed to determine if we are running in service: %v", err)
+		log.Fatal(err)
 	}
-	if inService {
-		runService(svcName, false)
-		return
-	}
-
-	if len(os.Args) < 2 {
-		usage("no command specified")
-	}
-
-	cmd := strings.ToLower(os.Args[1])
-	switch cmd {
-	case "debug":
-		runService(svcName, true)
-		return
-	case "install":
-		err = installService(svcName, "Monitoring Backup")
-	case "remove":
-		err = removeService(svcName)
-	case "start":
-		err = startService(svcName)
-	case "stop":
-		err = controlService(svcName, svc.Stop, svc.Stopped)
-	case "pause":
-		err = controlService(svcName, svc.Pause, svc.Paused)
-	case "continue":
-		err = controlService(svcName, svc.Continue, svc.Running)
-	default:
-		usage(fmt.Sprintf("invalid command %s", cmd))
-	}
+	logger, err = s.Logger(nil)
 	if err != nil {
-		log.Fatalf("failed to %s %s: %v", cmd, svcName, err)
+		log.Fatal(err)
 	}
-	return
+	err = s.Run()
+	if err != nil {
+		logger.Error(err)
+	}
 }
 
 func checkErr(err error)  {
