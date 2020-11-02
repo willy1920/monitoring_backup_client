@@ -1,6 +1,7 @@
 {
   "server": "172.18.128.203:9000",
-  "path": "D:\\Backup",
+  "pathToWatch": "D:\\Backup",
+  "pathForDatabase": "D:\\Development\\monitoring_backup\\client",
   "kebun": ["PSM", "PKC"],
   "waitReconnect": 30
 }

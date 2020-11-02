@@ -18,7 +18,8 @@ import(
 
 type Config struct{
 	Kebun []string `json:"kebun"`
-	Path string `json:"path"`
+	PathToWatch string `json:"pathToWatch"`
+	PathForDatabase string `json:"pathForDatabase"`
 	Server string `json:"server"`
 	WaitReconnect int `json:"waitReconnect"`
 	db *sql.DB
@@ -70,7 +71,7 @@ func (self *Config) InitSchedule() {
 		}
 	}()
 
-	err = watcher.Add(self.Path)
+	err = watcher.Add(self.PathToWatch)
 	if err != nil{
 		log.Fatal(err)
 	}

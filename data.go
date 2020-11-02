@@ -46,7 +46,7 @@ func (self *Config) Init() {
 		'status' CHAR(50),
 		PRIMARY KEY('kebun', 'last_update')
 	)`
-	self.db, _ = sql.Open("sqlite3", "data.sqlite3")
+	self.db, _ = sql.Open("sqlite3", self.PathForDatabase + "/data.sqlite3")
 	stmt, err := self.db.Prepare(sqlstmt)
 	checkErr(err)
 	stmt.Exec()
