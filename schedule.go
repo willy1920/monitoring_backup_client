@@ -29,17 +29,18 @@ type Config struct{
 }
 
 func (self *Config) StopAll() {
-	close(self.WatcherChan)
 	close(self.Schedule)
+	close(self.WatcherChan)
 }
 
 func (self *Config) InitSchedule() {
 	log.Println("Start watcher")
 	self.readConfig()
 	self.Init()
-	self.Schedule = make(chan bool)
 	self.WatcherChan = make(chan bool)
 	self.ScheduleRunning = false
+
+	self.ScheduleCheckServer()
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -189,6 +190,6 @@ func (self *Config) ScheduleDeleteLogs() {
 	}
 	if status {
 		self.ScheduleRunning = false
-		self.Schedule <- true
+		close(self.Schedule)
 	}
 }
