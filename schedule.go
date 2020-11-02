@@ -38,6 +38,7 @@ func (self *Config) InitSchedule() {
 	self.readConfig()
 	self.Init()
 	self.Schedule = make(chan bool)
+	self.WatcherChan = make(chan bool)
 	self.ScheduleRunning = false
 
 	watcher, err := fsnotify.NewWatcher()
