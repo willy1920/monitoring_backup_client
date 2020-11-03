@@ -37,7 +37,6 @@ func (self *Config) InitSchedule() {
 	log.Println("Start watcher")
 	self.readConfig()
 	self.Init()
-	self.WatcherChan = make(chan bool)
 	self.ScheduleRunning = false
 
 	self.ScheduleCheckServer()
@@ -81,13 +80,14 @@ func (self *Config) InitSchedule() {
 }
 
 func (self *Config) readConfig() {
-	ex, err := os.Executable()
-  if err != nil {
-    panic(err)
-  }
-	exPath := filepath.Dir(ex)
+	// ex, err := os.Executable()
+  // if err != nil {
+  //   panic(err)
+  // }
+	// exPath := filepath.Dir(ex)
 
-	jsonFile, err := os.Open(exPath + "\\config.json")
+	//jsonFile, err := os.Open(exPath + "\\config.json")
+	jsonFile, err := os.Open("D:\\Development\\monitoring_backup\\client\\config.json")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -158,6 +158,7 @@ func (self *Config) Created(kebun string, timestamp string, status string) error
 func (self *Config) ScheduleCheckServer() {
 	self.Schedule = make(chan bool)
 	self.ScheduleRunning = true
+	var backupLogs = self.GetLogs()
 
 	ticker := time.NewTicker(time.Duration(self.WaitReconnect) * time.Second)
 	go func(){
@@ -165,7 +166,7 @@ func (self *Config) ScheduleCheckServer() {
 			select {
 			case <- ticker.C:
 				log.Println("Start check server")
-				self.ScheduleDeleteLogs()
+				self.ScheduleDeleteLogs(backupLogs)
 			case <- self.Schedule:
 				log.Println("Stop check server")
 				ticker.Stop()
@@ -175,8 +176,7 @@ func (self *Config) ScheduleCheckServer() {
 	}()
 }
 
-func (self *Config) ScheduleDeleteLogs() {
-	var backupLogs = self.GetLogs()
+func (self *Config) ScheduleDeleteLogs(backupLogs []BackupLog) {
 	status := true
 
 	for _, v := range backupLogs{

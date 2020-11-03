@@ -2,10 +2,8 @@ package main
 
 import (
 	"log"
-	"net/http"
 
 	"github.com/kardianos/service"
-	"github.com/mattn/go-ieproxy"
 )
 
 var logger service.Logger
@@ -30,7 +28,6 @@ func (p *program) Stop(s service.Service) error {
 }
 
 func main() {
-	http.DefaultTransport.(*http.Transport).Proxy = ieproxy.GetProxyFunc()
 	svcConfig := &service.Config{
 		Name:        "Monitoring Backup",
 		DisplayName: "Monitoring Backup",
