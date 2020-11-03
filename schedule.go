@@ -24,13 +24,13 @@ type Config struct{
 	WaitReconnect int `json:"waitReconnect"`
 	db *sql.DB
 	WatcherChan chan bool
-	Schedule chan bool
+	Schedule chan struct{}
 	ScheduleRunning bool
 }
 
 func (self *Config) StopAll() {
-	close(self.Schedule)
-	close(self.WatcherChan)
+	self.StopScheduleRunning()
+	//close(self.WatcherChan)
 }
 
 func (self *Config) InitSchedule() {
@@ -39,7 +39,7 @@ func (self *Config) InitSchedule() {
 	self.Init()
 	self.ScheduleRunning = false
 
-	self.ScheduleCheckServer()
+	self.StartScheduleRunning()
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -112,10 +112,10 @@ func (self *Config) CheckName(name string) {
 					ok := self.Created(val, time.Now().Format(layoutSend), "Exporting Dump File")
 					if ok != nil {
 						if self.ScheduleRunning {
-							close(self.Schedule)
-							self.ScheduleCheckServer()
+							self.StopScheduleRunning()
+							self.StartScheduleRunning()
 						} else{
-							self.ScheduleCheckServer()
+							self.StartScheduleRunning()
 						}
 					}
 				}
@@ -156,8 +156,6 @@ func (self *Config) Created(kebun string, timestamp string, status string) error
 }
 
 func (self *Config) ScheduleCheckServer() {
-	self.Schedule = make(chan bool)
-	self.ScheduleRunning = true
 	var backupLogs = self.GetLogs()
 
 	ticker := time.NewTicker(time.Duration(self.WaitReconnect) * time.Second)
@@ -176,6 +174,19 @@ func (self *Config) ScheduleCheckServer() {
 	}()
 }
 
+func (self *Config) StopScheduleRunning() {
+	if self.ScheduleRunning {
+		close(self.Schedule)
+		self.ScheduleRunning = false
+	}
+}
+
+func (self *Config) StartScheduleRunning() {
+	self.Schedule = make(chan struct{})
+	self.ScheduleRunning = true
+	self.ScheduleCheckServer()
+}
+
 func (self *Config) ScheduleDeleteLogs(backupLogs []BackupLog) {
 	status := true
 
@@ -189,7 +200,6 @@ func (self *Config) ScheduleDeleteLogs(backupLogs []BackupLog) {
 		}
 	}
 	if status {
-		self.ScheduleRunning = false
-		close(self.Schedule)
+		self.StopScheduleRunning()
 	}
 }
