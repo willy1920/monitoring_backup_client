@@ -80,14 +80,13 @@ func (self *Config) InitSchedule() {
 }
 
 func (self *Config) readConfig() {
-	// ex, err := os.Executable()
-  // if err != nil {
-  //   panic(err)
-  // }
-	// exPath := filepath.Dir(ex)
+	ex, err := os.Executable()
+  if err != nil {
+    panic(err)
+  }
+	exPath := filepath.Dir(ex)
 
-	//jsonFile, err := os.Open(exPath + "\\config.json")
-	jsonFile, err := os.Open("D:\\Development\\monitoring_backup\\client\\config.json")
+	jsonFile, err := os.Open(exPath + "\\config.json")
 	if err != nil {
 		log.Fatal(err)
 	}
