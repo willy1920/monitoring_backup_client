@@ -1,5 +1,5 @@
 {
-  "server": "172.18.128.203:9000",
+  "server": "172.18.98.202:9000",
   "pathToWatch": "D:\\Backup",
   "pathForDatabase": "D:\\Development\\monitoring_backup\\client",
   "kebun": ["PSM", "PKC"],
