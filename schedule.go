@@ -149,7 +149,7 @@ func (self *Config) Created(kebun string, timestamp string, status string) error
 		log.Printf("Error when calling SendNotif: %s\r\n", err)
 		return err
 	} else{
-		log.Printf("Response from server: %s\r\n", response.Kebun)
+		log.Printf("Response from server: %t\r\nMessage: %s", response.Status, response.Message)
 	}
 	return nil
 }
