@@ -120,7 +120,15 @@ func (self *Config) CheckName(name string) {
 				}
 			case ".rar":
 				if filedatestring == time.Now().Format(layout) {
-					self.Created(val, time.Now().Format(layoutSend), "Success")
+					ok := self.Created(val, time.Now().Format(layoutSend), "Success")
+					if ok != nil {
+						if self.ScheduleRunning {
+							self.StopScheduleRunning()
+							self.StartScheduleRunning()
+						} else{
+							self.StartScheduleRunning()
+						}
+					}
 				}
 			}
 			break;
